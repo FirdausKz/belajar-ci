@@ -34,5 +34,11 @@
                 <span>Profil</span>
             </a>
     </li>
+    <li class="nav-item">
+    <a class="nav-link <?php echo (uri_string() == 'history') ? "" : "collapsed" ?>" href="history">
+        <i class="bi bi-folder"></i>
+        <span>History</span>
+    </a>
+</li><!-- End Profile Nav -->
 </ul>
 </aside>
