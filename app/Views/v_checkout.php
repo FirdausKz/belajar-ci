@@ -65,9 +65,27 @@
                     </tr>
                     <tr>
                         <td colspan="2"></td>
-                        <td>Total</td>
-                        <td><span id="total"><?php echo number_to_currency($total, 'IDR') ?></span></td>
+                        <td>PPN (11%)</td>
+                        <td><?php echo number_to_currency($ppn, 'IDR') ?></td>
                     </tr>
+                    <tr>
+                        <td colspan="2"></td>
+                        <td>Biaya Admin</td>
+                        <td><?php echo number_to_currency($biaya_admin, 'IDR') ?></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"></td>
+                        <td>Ongkir</td>
+                        <td><span id="ongkir_display"><?= number_to_currency(0, 'IDR') ?></span></td>
+
+                    </tr>
+                    <tr>
+                        <td colspan="2"></td>
+                        <td><strong>Grand Total</strong></td>
+                        <td><strong><span id="grand_total"><?php echo number_to_currency($total + $ppn + $biaya_admin, 'IDR') ?></span></strong></td>
+                    </tr>
+
+                    
                 </tbody>
             </table>
             <!-- End Default Table Example -->
@@ -81,6 +99,8 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('script') ?>
+
+// ...existing code...
 <script>
 $(document).ready(function() {
     var ongkir = 0;
@@ -88,68 +108,80 @@ $(document).ready(function() {
     hitungTotal();
 
     $('#kelurahan').select2({
-    placeholder: 'Ketik nama kelurahan...',
-    ajax: {
-        url: '<?= base_url('get-location') ?>',
-        dataType: 'json',
-        delay: 1500,
-        data: function (params) {
-            return {
-                search: params.term
-            };
-        },
-        processResults: function (data) {
-            return {
-                results: data.map(function(item) {
+        placeholder: 'Ketik nama kelurahan...',
+        ajax: {
+            url: '<?= base_url('get-location') ?>',
+            dataType: 'json',
+            delay: 1500,
+            data: function (params) {
                 return {
-                    id: item.id,
-                    text: item.subdistrict_name + ", " + item.district_name + ", " + item.city_name + ", " + item.province_name + ", " + item.zip_code
+                    search: params.term
                 };
-                })
-            };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.map(function(item) {
+                        return {
+                            id: item.id,
+                            text: item.subdistrict_name + ", " + item.district_name + ", " + item.city_name + ", " + item.province_name + ", " + item.zip_code
+                        };
+                    })
+                };
+            },
+            cache: true
         },
-        cache: true
-    },
-    minimumInputLength: 3
-});
-
-$("#kelurahan").on('change', function() {
-    var id_kelurahan = $(this).val(); 
-    $("#layanan").empty();
-    ongkir = 0;
-
-    $.ajax({
-        url: "<?= site_url('get-cost') ?>",
-        type: 'GET',
-        data: { 
-            'destination': id_kelurahan, 
-        },
-        dataType: 'json',
-        success: function(data) { 
-            data.forEach(function(item) {
-                var text = item["description"] + " (" + item["service"] + ") : estimasi " + item["etd"] + "";
-                $("#layanan").append($('<option>', {
-                    value: item["cost"],
-                    text: text 
-                }));
-            });
-            hitungTotal(); 
-        },
+        minimumInputLength: 3
     });
-});
 
+    $("#kelurahan").on('change', function() {
+        var id_kelurahan = $(this).val(); 
+        $("#layanan").empty();
+        ongkir = 0;
+        hitungTotal();
+
+        $.ajax({
+            url: "<?= site_url('get-cost') ?>",
+            type: 'GET',
+            data: { 
+                'destination': id_kelurahan, 
+            },
+            dataType: 'json',
+            success: function(data) { 
+                data.forEach(function(item) {
+                    var text = item["description"] + " (" + item["service"] + ") : estimasi " + item["etd"] + " hari";
+                    $("#layanan").append($('<option>', {
+                        value: item["cost"],
+                        text: text 
+                    }));
+                });
+            },
+        });
+    });
+    
     $("#layanan").on('change', function() {
-        ongkir = parseInt($(this).val());
+        ongkir = parseInt($(this).val()) || 0;
         hitungTotal();
     });  
 
-        function hitungTotal() {
-            total = ongkir + <?= $total ?>;
+    function hitungTotal() {
+        var subtotal = <?= $total ?>;
+        var ppn = <?= $ppn ?>;
+        var biaya_admin = <?= $biaya_admin ?>;
+        total = subtotal + ppn + biaya_admin + ongkir;
 
-            $("#ongkir").val(ongkir);
-            $("#total").html("IDR " + total.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,'));
-            $("#total_harga").val(total);
-        }
-    });
+        
+        $("#ongkir").val(ongkir);
+        
+        
+        $("#ongkir_display").html("IDR " + ongkir.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,'));
+        
+        
+        $("#grand_total").html("IDR " + total.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,'));
+        
+        
+        $("#total_harga").val(total);
+    }
+});
 </script>
+// ...existing code...
 <?= $this->endSection() ?>
